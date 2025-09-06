@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Terms of Use — Happiness Checklist</title>
+    <link rel="stylesheet" href="/website/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <div class="brand">
+          <a href="./index.html" class="brand-link">
+            <img src="./logo.png" alt="Happiness Checklist logo" class="logo" />
+            <span>Happiness Checklist</span>
+          </a>
+        </div>
+        <nav class="nav">
+          <a href="./privacy.html">Privacy</a>
+          <a href="./terms.html">Terms</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container legal">
+      <h1>Terms of Use</h1>
+      <p>By using Happiness Checklist, you agree to these terms. The app is provided “as is” without warranties of any kind. You are responsible for maintaining access to your Apple ID and iCloud account where your data is stored.</p>
+      <h3>Use of the Service</h3>
+      <ul>
+        <li>For personal, non‑commercial use.</li>
+        <li>Do not misuse, reverse engineer, or attempt to disrupt the service.</li>
+      </ul>
+      <h3>Data</h3>
+      <p>Your entries are stored in your private iCloud database. Removing the app or using the in‑app delete function removes entries from your account.</p>
+      <h3>Liability</h3>
+      <p>To the maximum extent permitted by law, we are not liable for any damages arising from your use of the app.</p>
+      <h3>Changes</h3>
+      <p>We may update these terms. Continued use constitutes acceptance of the updated terms.</p>
+      <p class="muted">Last updated: <span id="date"></span></p>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <div>© <span id="year"></span> Happiness Checklist</div>
+        <nav>
+          <a href="/website/privacy.html">Privacy</a>
+          <a href="/website/terms.html">Terms</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+      document.getElementById('date').textContent = new Date().toISOString().slice(0,10);
+    </script>
+  </body>
+  </html>
+
+

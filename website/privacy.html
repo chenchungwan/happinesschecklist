@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy — Happiness Checklist</title>
+    <link rel="stylesheet" href="/website/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <div class="brand">
+          <a href="./index.html" class="brand-link">
+            <img src="./logo.png" alt="Happiness Checklist logo" class="logo" />
+            <span>Happiness Checklist</span>
+          </a>
+        </div>
+        <nav class="nav">
+          <a href="./privacy.html">Privacy</a>
+          <a href="./terms.html">Terms</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container legal">
+      <h1>Privacy Policy</h1>
+      <p>We respect your privacy. This app stores your entries in Apple’s iCloud via Core Data + CloudKit so your data stays within your Apple account. We do not collect, sell, or share personal data with third parties.</p>
+      <h3>Data we store</h3>
+      <ul>
+        <li>Daily notes you enter for Gratitude, Kindness, Connection, Meditation, and Savoring.</li>
+        <li>Basic app settings (e.g., onboarding status) stored locally on device.</li>
+      </ul>
+      <h3>Data access</h3>
+      <p>Your iCloud account controls access to your synced data. Removing the app or using the in‑app “Delete All Data” will remove your entries from your private CloudKit database.</p>
+      <h3>Contact</h3>
+      <p>Questions? Contact us at support@example.com.</p>
+      <p class="muted">Last updated: <span id="date"></span></p>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <div>© <span id="year"></span> Happiness Checklist</div>
+        <nav>
+          <a href="/website/privacy.html">Privacy</a>
+          <a href="/website/terms.html">Terms</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+      document.getElementById('date').textContent = new Date().toISOString().slice(0,10);
+    </script>
+  </body>
+  </html>
+
+
