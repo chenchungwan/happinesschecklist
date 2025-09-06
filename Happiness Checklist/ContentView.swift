@@ -16,6 +16,7 @@ struct ContentView: View {
     @StateObject private var viewModel: DailyEntryViewModel
     @State private var showingAbout: Bool = false
     @State private var showingDeleteAlert: Bool = false
+    @State private var showCongrats: Bool = false
 
     private enum Category {
         case gratitude, kindness, connection, meditation, savor
@@ -73,6 +74,10 @@ struct ContentView: View {
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             viewModel.save()
                             editingCategory = nil
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { showCongrats = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                                withAnimation(.easeOut(duration: 0.25)) { showCongrats = false }
+                            }
                         }
                     }
                 }
@@ -114,6 +119,13 @@ struct ContentView: View {
             } message: {
                 Text("This will erase all saved entries and cannot be undone.")
             }
+            .overlay(
+                Group {
+                    if showCongrats {
+                        CongratsAlertView(message: "Entry saved for today.")
+                    }
+                }
+            )
         }
     }
 
