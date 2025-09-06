@@ -17,6 +17,11 @@ struct ContentView: View {
     @State private var showingAbout: Bool = false
     @State private var showingDeleteAlert: Bool = false
 
+    private enum Category {
+        case gratitude, kindness, connection, meditation, savor
+    }
+    @State private var editingCategory: Category? = nil
+
     init(viewModel: DailyEntryViewModel = DailyEntryViewModel(context: PersistenceController.shared.container.viewContext)) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
@@ -43,101 +48,11 @@ struct ContentView: View {
                 .padding(.horizontal)
 
                 Form {
-                    Section(header: HStack {
-                        if viewModel.isGratitudeChecked {
-                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                        } else {
-                            Image(systemName: "checkmark.circle.fill").opacity(0)
-                        }
-                        Text("Gratitude")
-                    }) {
-                        TextEditor(text: Binding(
-                            get: { viewModel.entry?.gratitude ?? "" },
-                            set: { newValue in
-                                guard viewModel.isTodaySelected else { return }
-                                viewModel.ensureTodayEntry()
-                                viewModel.entry?.gratitude = newValue
-                            }
-                        ))
-                        .disabled(!viewModel.isTodaySelected)
-                        .frame(minHeight: UIFont.preferredFont(forTextStyle: .body).lineHeight * 2)
-                    }
-                    Section(header: HStack {
-                        if viewModel.isKindnessChecked {
-                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                        } else {
-                            Image(systemName: "checkmark.circle.fill").opacity(0)
-                        }
-                        Text("Kindness")
-                    }) {
-                        TextEditor(text: Binding(
-                            get: { viewModel.entry?.kindness ?? "" },
-                            set: { newValue in
-                                guard viewModel.isTodaySelected else { return }
-                                viewModel.ensureTodayEntry()
-                                viewModel.entry?.kindness = newValue
-                            }
-                        ))
-                        .disabled(!viewModel.isTodaySelected)
-                        .frame(minHeight: UIFont.preferredFont(forTextStyle: .body).lineHeight * 2)
-                    }
-                    Section(header: HStack {
-                        if viewModel.isConnectionChecked {
-                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                        } else {
-                            Image(systemName: "checkmark.circle.fill").opacity(0)
-                        }
-                        Text("Connection")
-                    }) {
-                        TextEditor(text: Binding(
-                            get: { viewModel.entry?.connection ?? "" },
-                            set: { newValue in
-                                guard viewModel.isTodaySelected else { return }
-                                viewModel.ensureTodayEntry()
-                                viewModel.entry?.connection = newValue
-                            }
-                        ))
-                        .disabled(!viewModel.isTodaySelected)
-                        .frame(minHeight: UIFont.preferredFont(forTextStyle: .body).lineHeight * 2)
-                    }
-                    Section(header: HStack {
-                        if viewModel.isMedicationChecked {
-                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                        } else {
-                            Image(systemName: "checkmark.circle.fill").opacity(0)
-                        }
-                        Text("Meditation")
-                    }) {
-                        TextEditor(text: Binding(
-                            get: { viewModel.entry?.medication ?? "" },
-                            set: { newValue in
-                                guard viewModel.isTodaySelected else { return }
-                                viewModel.ensureTodayEntry()
-                                viewModel.entry?.medication = newValue
-                            }
-                        ))
-                        .disabled(!viewModel.isTodaySelected)
-                        .frame(minHeight: UIFont.preferredFont(forTextStyle: .body).lineHeight * 2)
-                    }
-                    Section(header: HStack {
-                        if viewModel.isSavoryChecked {
-                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                        } else {
-                            Image(systemName: "checkmark.circle.fill").opacity(0)
-                        }
-                        Text("Savor")
-                    }) {
-                        TextEditor(text: Binding(
-                            get: { viewModel.entry?.savory ?? "" },
-                            set: { newValue in
-                                guard viewModel.isTodaySelected else { return }
-                                viewModel.ensureTodayEntry()
-                                viewModel.entry?.savory = newValue
-                            }
-                        ))
-                        .disabled(!viewModel.isTodaySelected)
-                        .frame(minHeight: UIFont.preferredFont(forTextStyle: .body).lineHeight * 2)
-                    }
+                    categorySection(title: "Gratitude", category: .gratitude, isChecked: viewModel.isGratitudeChecked)
+                    categorySection(title: "Kindness", category: .kindness, isChecked: viewModel.isKindnessChecked)
+                    categorySection(title: "Connection", category: .connection, isChecked: viewModel.isConnectionChecked)
+                    categorySection(title: "Meditation", category: .meditation, isChecked: viewModel.isMedicationChecked)
+                    categorySection(title: "Savor", category: .savor, isChecked: viewModel.isSavoryChecked)
                 }
                 .scrollContentBackground(.hidden)
             }
@@ -146,6 +61,7 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             .onChange(of: viewModel.selectedDate) { _ in
                 viewModel.loadEntry(for: viewModel.selectedDate)
+                editingCategory = nil
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
                 if viewModel.isTodaySelected { viewModel.save() }
@@ -156,6 +72,7 @@ struct ContentView: View {
                         Button("Save") {
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             viewModel.save()
+                            editingCategory = nil
                         }
                     }
                 }
@@ -181,6 +98,10 @@ struct ContentView: View {
                         .font(.body)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
+                    Text("Inspired by Yale’s ‘The Science of Well-Being’ course by Dr. Laurie Santos — Yale’s most popular class in 300+ years — which covers what really drives happiness (and common misconceptions), how our minds mispredict well-being (biases and hedonic adaptation), and evidence-based ‘rewirements’ like practicing gratitude and kindness, building social connection, savoring, mindfulness/meditation, prioritizing sleep and exercise, and making better choices to boost day-to-day well-being.")
+                        .font(.footnote)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
                     Button("Close") { showingAbout = false }
                         .padding(.top, 8)
                 }
@@ -189,9 +110,63 @@ struct ContentView: View {
             }
             .alert("Delete All Data?", isPresented: $showingDeleteAlert) {
                 Button("Cancel", role: .cancel) {}
-                Button("Delete", role: .destructive) { viewModel.deleteAllData() }
+                Button("Delete", role: .destructive) { viewModel.deleteAllData(); editingCategory = nil }
             } message: {
                 Text("This will erase all saved entries and cannot be undone.")
+            }
+        }
+    }
+
+    private func displayText(for category: Category) -> String {
+        switch category {
+        case .gratitude: return viewModel.entry?.gratitude ?? ""
+        case .kindness: return viewModel.entry?.kindness ?? ""
+        case .connection: return viewModel.entry?.connection ?? ""
+        case .meditation: return viewModel.entry?.medication ?? ""
+        case .savor: return viewModel.entry?.savory ?? ""
+        }
+    }
+
+    private func textBinding(for category: Category) -> Binding<String> {
+        Binding<String>(
+            get: { displayText(for: category) },
+            set: { newValue in
+                guard viewModel.isTodaySelected else { return }
+                viewModel.ensureTodayEntry()
+                switch category {
+                case .gratitude: viewModel.entry?.gratitude = newValue
+                case .kindness: viewModel.entry?.kindness = newValue
+                case .connection: viewModel.entry?.connection = newValue
+                case .meditation: viewModel.entry?.medication = newValue
+                case .savor: viewModel.entry?.savory = newValue
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func categorySection(title: String, category: Category, isChecked: Bool) -> some View {
+        Section(header: HStack {
+            if isChecked {
+                Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+            } else {
+                Image(systemName: "checkmark.circle.fill").opacity(0)
+            }
+            Text(title)
+        }) {
+            if viewModel.isTodaySelected && editingCategory == category {
+                TextEditor(text: textBinding(for: category))
+                    .frame(minHeight: UIFont.preferredFont(forTextStyle: .body).lineHeight * 2)
+            } else {
+                let text = displayText(for: category)
+                Group {
+                    if text.isEmpty && viewModel.isTodaySelected {
+                        Text("Tap to add").foregroundColor(.secondary).italic()
+                    } else {
+                        Text(text)
+                    }
+                }
+                .onTapGesture { if viewModel.isTodaySelected { editingCategory = category } }
             }
         }
     }
