@@ -14,10 +14,13 @@ struct PersistenceController {
     static let preview: PersistenceController = {
         let result = PersistenceController(inMemory: true)
         let viewContext = result.container.viewContext
-        for _ in 0..<10 {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-        }
+        let entry = DailyEntry(context: viewContext)
+        entry.date = Calendar.current.startOfDay(for: Date())
+        entry.gratitude = "Called a friend"
+        entry.kindness = "Bought coffee for a colleague"
+        entry.connection = "Had dinner with family"
+        entry.medication = "Took morning meds"
+        entry.savory = "Cooked a tasty meal"
         do {
             try viewContext.save()
         } catch {
@@ -36,6 +39,9 @@ struct PersistenceController {
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         }
+        if let description = container.persistentStoreDescriptions.first {
+            description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: "iCloud.com.chenchungwan.Happiness-Checklist")
+        }
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
                 // Replace this implementation with code to handle the error appropriately.
@@ -53,5 +59,6 @@ struct PersistenceController {
             }
         })
         container.viewContext.automaticallyMergesChangesFromParent = true
+        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     }
 }

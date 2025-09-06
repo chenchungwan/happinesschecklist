@@ -13,8 +13,12 @@ struct Happiness_ChecklistApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(viewModel: DailyEntryViewModel(context: persistenceController.container.viewContext))
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .onAppear {
+                    // Kick off CloudKit sync early
+                    _ = persistenceController.container.viewContext
+                }
         }
     }
 }

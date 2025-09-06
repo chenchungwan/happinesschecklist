@@ -7,70 +7,207 @@
 
 import SwiftUI
 import CoreData
+import UIKit
+import StoreKit
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
+    @StateObject private var viewModel: DailyEntryViewModel
+    @State private var showingAbout: Bool = false
+    @State private var showingDeleteAlert: Bool = false
+
+    init(viewModel: DailyEntryViewModel = DailyEntryViewModel(context: PersistenceController.shared.container.viewContext)) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
 
     var body: some View {
         NavigationView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                    } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
+            ZStack {
+                Color(UIColor.systemGroupedBackground).ignoresSafeArea()
+                VStack(spacing: 16) {
+                HStack {
+                    if viewModel.hasPreviousEntry {
+                        Button(action: viewModel.goToPreviousDay) {
+                            Image(systemName: "chevron.left")
+                        }
+                    }
+                    Spacer()
+                    Text(viewModel.selectedDate, style: .date)
+                    Spacer()
+                    Button(action: viewModel.goToNextDay) {
+                        Image(systemName: "chevron.right")
+                    }
+                    .disabled(Calendar.current.isDateInToday(viewModel.selectedDate))
+                }
+                .padding(.horizontal)
+
+                Form {
+                    Section(header: HStack {
+                        if viewModel.isGratitudeChecked {
+                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+                        } else {
+                            Image(systemName: "checkmark.circle.fill").opacity(0)
+                        }
+                        Text("Gratitude")
+                    }) {
+                        TextEditor(text: Binding(
+                            get: { viewModel.entry?.gratitude ?? "" },
+                            set: { newValue in
+                                guard viewModel.isTodaySelected else { return }
+                                viewModel.ensureTodayEntry()
+                                viewModel.entry?.gratitude = newValue
+                            }
+                        ))
+                        .disabled(!viewModel.isTodaySelected)
+                        .frame(minHeight: UIFont.preferredFont(forTextStyle: .body).lineHeight * 2)
+                    }
+                    Section(header: HStack {
+                        if viewModel.isKindnessChecked {
+                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+                        } else {
+                            Image(systemName: "checkmark.circle.fill").opacity(0)
+                        }
+                        Text("Kindness")
+                    }) {
+                        TextEditor(text: Binding(
+                            get: { viewModel.entry?.kindness ?? "" },
+                            set: { newValue in
+                                guard viewModel.isTodaySelected else { return }
+                                viewModel.ensureTodayEntry()
+                                viewModel.entry?.kindness = newValue
+                            }
+                        ))
+                        .disabled(!viewModel.isTodaySelected)
+                        .frame(minHeight: UIFont.preferredFont(forTextStyle: .body).lineHeight * 2)
+                    }
+                    Section(header: HStack {
+                        if viewModel.isConnectionChecked {
+                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+                        } else {
+                            Image(systemName: "checkmark.circle.fill").opacity(0)
+                        }
+                        Text("Connection")
+                    }) {
+                        TextEditor(text: Binding(
+                            get: { viewModel.entry?.connection ?? "" },
+                            set: { newValue in
+                                guard viewModel.isTodaySelected else { return }
+                                viewModel.ensureTodayEntry()
+                                viewModel.entry?.connection = newValue
+                            }
+                        ))
+                        .disabled(!viewModel.isTodaySelected)
+                        .frame(minHeight: UIFont.preferredFont(forTextStyle: .body).lineHeight * 2)
+                    }
+                    Section(header: HStack {
+                        if viewModel.isMedicationChecked {
+                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+                        } else {
+                            Image(systemName: "checkmark.circle.fill").opacity(0)
+                        }
+                        Text("Meditation")
+                    }) {
+                        TextEditor(text: Binding(
+                            get: { viewModel.entry?.medication ?? "" },
+                            set: { newValue in
+                                guard viewModel.isTodaySelected else { return }
+                                viewModel.ensureTodayEntry()
+                                viewModel.entry?.medication = newValue
+                            }
+                        ))
+                        .disabled(!viewModel.isTodaySelected)
+                        .frame(minHeight: UIFont.preferredFont(forTextStyle: .body).lineHeight * 2)
+                    }
+                    Section(header: HStack {
+                        if viewModel.isSavoryChecked {
+                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+                        } else {
+                            Image(systemName: "checkmark.circle.fill").opacity(0)
+                        }
+                        Text("Savor")
+                    }) {
+                        TextEditor(text: Binding(
+                            get: { viewModel.entry?.savory ?? "" },
+                            set: { newValue in
+                                guard viewModel.isTodaySelected else { return }
+                                viewModel.ensureTodayEntry()
+                                viewModel.entry?.savory = newValue
+                            }
+                        ))
+                        .disabled(!viewModel.isTodaySelected)
+                        .frame(minHeight: UIFont.preferredFont(forTextStyle: .body).lineHeight * 2)
                     }
                 }
-                .onDelete(perform: deleteItems)
+                .scrollContentBackground(.hidden)
+            }
+            }
+            .navigationTitle("Happiness")
+            .navigationBarTitleDisplayMode(.inline)
+            .onChange(of: viewModel.selectedDate) { _ in
+                viewModel.loadEntry(for: viewModel.selectedDate)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+                if viewModel.isTodaySelected { viewModel.save() }
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
+                    if viewModel.isTodaySelected {
+                        Button("Save") {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                            viewModel.save()
+                        }
+                    }
                 }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Menu {
+                        Button("About") { showingAbout = true }
+                        Button("Feedback") { requestAppReview() }
+                        Button(role: .destructive) { showingDeleteAlert = true } label: { Text("Delete All Data") }
+                    } label: {
+                        Image(systemName: "line.3.horizontal")
                     }
                 }
             }
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            .onAppear {
+                UITableView.appearance().backgroundColor = .clear
+                UITableViewCell.appearance().backgroundColor = .clear
+            }
+            .sheet(isPresented: $showingAbout) {
+                VStack(spacing: 12) {
+                    Text("Happiness Checklist").font(.headline)
+                    Text(appVersionString()).font(.subheadline)
+                    Text("Track your daily happiness actions across five categories.")
+                        .font(.body)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    Button("Close") { showingAbout = false }
+                        .padding(.top, 8)
+                }
+                .padding()
+                .presentationDetents([.medium])
+            }
+            .alert("Delete All Data?", isPresented: $showingDeleteAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) { viewModel.deleteAllData() }
+            } message: {
+                Text("This will erase all saved entries and cannot be undone.")
             }
         }
     }
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
+    private func requestAppReview() {
+        if let windowScene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }) {
+            SKStoreReviewController.requestReview(in: windowScene)
         }
+    }
+
+    private func appVersionString() -> String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
+        return "Version \(version) (\(build))"
     }
 }
 
