@@ -1,12 +1,16 @@
 import Foundation
 import CoreData
+import Photos
+import UIKit
 
 final class DailyEntryViewModel: ObservableObject {
     @Published var selectedDate: Date = Calendar.current.startOfDay(for: Date())
     @Published var entry: DailyEntry?
     @Published var hasPreviousEntry: Bool = false
+    @Published var photos: [Photo] = []
 
     private let context: NSManagedObjectContext
+    private var tempImageData: [String: Data] = [:]
 
     init(context: NSManagedObjectContext) {
         self.context = context
@@ -24,6 +28,7 @@ final class DailyEntryViewModel: ObservableObject {
             entry = nil
         }
         updateHasPreviousEntry(relativeTo: startOfDay)
+        loadPhotos()
     }
 
     func ensureTodayEntry() {
@@ -89,11 +94,17 @@ final class DailyEntryViewModel: ObservableObject {
         return true
     }
 
-    var isGratitudeChecked: Bool { hasSavedText(entry?.gratitude) }
-    var isKindnessChecked: Bool { hasSavedText(entry?.kindness) }
-    var isConnectionChecked: Bool { hasSavedText(entry?.connection) }
-    var isMedicationChecked: Bool { hasSavedText(entry?.medication) }
-    var isSavoryChecked: Bool { hasSavedText(entry?.savory) }
+    private func hasPhotosForCategory(_ category: String) -> Bool {
+        return photos.contains { $0.category == category }
+    }
+
+    var isGratitudeChecked: Bool { hasSavedText(entry?.gratitude) || hasPhotosForCategory("gratitude") }
+    var isKindnessChecked: Bool { hasSavedText(entry?.kindness) || hasPhotosForCategory("kindness") }
+    var isConnectionChecked: Bool { hasSavedText(entry?.connection) || hasPhotosForCategory("connection") }
+    var isMeditationChecked: Bool { hasSavedText(entry?.meditation) || hasPhotosForCategory("meditation") }
+    var isSavoryChecked: Bool { hasSavedText(entry?.savory) || hasPhotosForCategory("savor") }
+    var isExerciseChecked: Bool { hasSavedText(entry?.exercise) || hasPhotosForCategory("exercise") }
+    var isSleepChecked: Bool { hasSavedText(entry?.sleep) || hasPhotosForCategory("sleep") }
 
     @MainActor
     func deleteAllData() {
@@ -114,6 +125,90 @@ final class DailyEntryViewModel: ObservableObject {
         }
         loadEntry(for: selectedDate)
         updateHasPreviousEntry(relativeTo: Calendar.current.startOfDay(for: selectedDate))
+    }
+
+    // MARK: - Photos
+    func loadPhotos() {
+        guard let entry = entry else {
+            photos = []
+            return
+        }
+        if let set = entry.photos as? Set<Photo> {
+            photos = set.sorted { ($0.createdAt ?? Date.distantPast) < ($1.createdAt ?? Date.distantPast) }
+        } else {
+            photos = []
+        }
+    }
+
+    func addPhotoAsset(_ assetIdentifier: String, category: String? = nil) {
+        ensureTodayEntry()
+        guard let currentEntry = entry else { return }
+        
+        let categoryKey = category ?? "entry"
+        let categoryPhotos = photos.filter { $0.category == categoryKey }
+        if categoryPhotos.count >= 3 { return }
+
+        let photo = Photo(context: context)
+        photo.id = UUID()
+        photo.createdAt = Date()
+        photo.assetIdentifier = assetIdentifier
+        photo.category = categoryKey
+        photo.entry = currentEntry
+        do {
+            try context.save()
+            loadPhotos()
+        } catch {
+            #if DEBUG
+            print("Failed to save photo: \(error)")
+            #endif
+        }
+    }
+
+    func setTempImageData(_ data: Data, for identifier: String) {
+        tempImageData[identifier] = data
+    }
+
+    func deletePhoto(_ photo: Photo) {
+        context.delete(photo)
+        do {
+            try context.save()
+            loadPhotos()
+        } catch {
+            #if DEBUG
+            print("Failed to delete photo: \(error)")
+            #endif
+        }
+    }
+
+    func getUIImage(for photo: Photo, completion: @escaping (UIImage?) -> Void) {
+        guard let identifier = photo.assetIdentifier else {
+            completion(nil)
+            return
+        }
+        
+        // First check if we have temp data for this identifier
+        if let data = tempImageData[identifier] {
+            completion(UIImage(data: data))
+            return
+        }
+        
+        // Otherwise try to fetch from Photos library (this may fail for temp UUIDs)
+        let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
+        guard let asset = fetchResult.firstObject else {
+            completion(nil)
+            return
+        }
+        
+        let manager = PHImageManager.default()
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.isSynchronous = false
+        
+        manager.requestImage(for: asset, targetSize: CGSize(width: 300, height: 300), contentMode: .aspectFill, options: options) { image, _ in
+            DispatchQueue.main.async {
+                completion(image)
+            }
+        }
     }
 }
 

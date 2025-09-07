@@ -19,7 +19,7 @@ struct PersistenceController {
         entry.gratitude = "Called a friend"
         entry.kindness = "Bought coffee for a colleague"
         entry.connection = "Had dinner with family"
-        entry.medication = "Took morning meds"
+        entry.meditation = "Morning mindfulness session"
         entry.savory = "Cooked a tasty meal"
         do {
             try viewContext.save()

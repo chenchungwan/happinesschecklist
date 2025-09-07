@@ -5,10 +5,21 @@
         <attribute name="gratitude" optional="YES" attributeType="String"/>
         <attribute name="kindness" optional="YES" attributeType="String"/>
         <attribute name="connection" optional="YES" attributeType="String"/>
-        <attribute name="medication" optional="YES" attributeType="String"/>
+        <attribute name="meditation" optional="YES" attributeType="String"/>
         <attribute name="savory" optional="YES" attributeType="String"/>
+        <attribute name="exercise" optional="YES" attributeType="String"/>
+        <attribute name="sleep" optional="YES" attributeType="String"/>
+        <relationship name="photos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Photo" inverseName="entry" inverseEntity="Photo"/>
+    </entity>
+    <entity name="Photo" representedClassName="Photo" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="category" optional="YES" attributeType="String"/>
+        <attribute name="assetIdentifier" optional="YES" attributeType="String"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="entry" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="DailyEntry" inverseName="photos" inverseEntity="DailyEntry"/>
     </entity>
     <elements>
-        <element name="DailyEntry" positionX="-63" positionY="-18" width="128" height="104"/>
+        <element name="DailyEntry" positionX="-63" positionY="-18" width="128" height="120"/>
+        <element name="Photo" positionX="129" positionY="-18" width="128" height="120"/>
     </elements>
 </model>

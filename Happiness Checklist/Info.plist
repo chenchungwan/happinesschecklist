@@ -6,5 +6,7 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app lets you attach up to 3 photos to today’s entry.</string>
 </dict>
 </plist>
